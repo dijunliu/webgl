@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>virtual touch</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link data-n-head="1" rel="icon" type="image/png" href="icon.png">
+	<link type="text/css" rel="stylesheet" href="main.css">
+</head>
+
+<body>
+
+	<script type="module">
+
+		import * as THREE from './build/three.module.js';
+
+		import Stats from './libs/stats.module.js';
+		import { GUI } from './libs/dat.gui.module.js';
+		import { OrbitControls } from './libs/OrbitControls.js';
+		import { GLTFLoader } from './libs/GLTFLoader.js';
+		import { RGBELoader } from './libs/RGBELoader.js';
+		import { RoughnessMipmapper } from './libs/RoughnessMipmapper.js';
+
+		let camera, scene, renderer,stats;
+
+		init();
+		render();
+
+		function init() {
+
+			const container = document.createElement('div');
+			document.body.appendChild(container);
+
+			stats = new Stats();
+			container.appendChild( stats.dom );
+			//camera
+
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+			camera.position.set(0, 0, 1000);
+			// Set position like this
+			// camera.lookAt(new THREE.Vector3(0, 0, 0)); // Set look at coordinate like this
+			//scene
+
+			scene = new THREE.Scene();
+			//light
+
+			const light = new THREE.AmbientLight(0xffffff, 0.5); // soft white light
+			scene.add(light);
+			const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+			directionalLight.position.set(1, 1, 1)
+			scene.add(directionalLight);
+			//textures
+
+			let textureLoader = new THREE.TextureLoader();
+			textureLoader.setPath('demo/color1/')
+			let normalMap = textureLoader.load("normal.jpg");
+			normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+
+			let diffuseMap = textureLoader.load("diffuse.jpg");
+			diffuseMap.update = true;
+			diffuseMap.wrapS = diffuseMap.wrapT = THREE.RepeatWrapping;
+			diffuseMap.repeat.set(10, 10);
+
+			let metalnessMap = textureLoader.load("metalness.jpg");
+			metalnessMap.wrapS = metalnessMap.wrapT = THREE.RepeatWrapping;
+
+			let opacityMap = textureLoader.load("opacity.jpg");
+			opacityMap.wrapS = opacityMap.wrapT = THREE.RepeatWrapping;
+
+			let roughnessMap = textureLoader.load("roughness.jpg");
+			roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
+
+
+			function f1() {
+				// mesh.material.needsUpdate = true;
+				// material.map = textureLoader.load("diffuse.jpg");
+				// material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+				// material.map.repeat.set(10, 10);
+
+
+				// mesh.material.normalMap = textureLoader.load("normal.jpg");
+				
+				// mesh.material.normalMap.wrapS = mesh.material.normalMap.wrapT = THREE.RepeatWrapping;
+				// mesh.material.normalMap.repeat.set(10, 10);
+				// mesh.material.normalMap.needsUpdate = true; 
+				// material.normalScale = new THREE.Vector3( 0, 0)
+				material.opacity = 10;
+				material.normalScale = new THREE.Vector3( 0.01, 0.01);
+				material.roughness = 0;
+				render();			
+			}
+
+			function f2() {
+					// mesh.material.needsUpdate = true;
+					//textureLoader.setPath('textures/demo/color5/');
+				// material.map = textureLoader.load("diffuse.jpg");
+				
+
+
+				// mesh.material.normalMap = textureLoader.load("normal.jpg");
+				
+				// mesh.material.normalMap.wrapS = mesh.material.normalMap.wrapT = THREE.RepeatWrapping;
+				// mesh.material.normalMap.repeat.set(10, 10);
+				// mesh.material.normalMap.needsUpdate = true; 
+
+				textureLoader.setPath('demo/color4/');
+				var texture = textureLoader.load('diffuse.jpg', function () {
+					var tex = texture.clone();    
+
+					tex.needsUpdate = true; 
+					mesh.material.map = tex;
+					material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+					material.map.repeat.set(10, 10);
+					material.opacity = 1.5;
+					material.roughness = 1;
+					render();
+				});
+			
+
+			}
+			function f3() {
+					// mesh.material.needsUpdate = true;
+				material.opacity = 10;
+				textureLoader.setPath('demo/color1/');
+				var texture = textureLoader.load('metalness.jpg', function () {
+					var tex = texture.clone();    
+
+					tex.needsUpdate = true; //maybe useless too ?
+					mesh.material.map = tex;
+					material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+					material.map.repeat.set(10, 10);
+					render();
+				});
+			
+
+			}
+			
+			//material
+			let mesh, geometry
+			let material = new THREE.MeshStandardMaterial({
+
+				map: diffuseMap,
+				normalMap: normalMap,
+				normalScale:new THREE.Vector3( 1, 1),
+				metalness: 0,
+				metalnessMap: metalnessMap,
+				roughness: 1,
+				roughnessMap: roughnessMap,
+				alphaMap: opacityMap,
+				side: THREE.DoubleSide,
+				// color:0x00ff00,
+				opacity:10,
+				transparent:true,
+
+			});
+			material.needsUpdate = true
+			new RGBELoader()
+				.setPath('textures/')
+				.load('royal_esplanade_1k.hdr', function (texture) {
+
+					texture.mapping = THREE.EquirectangularReflectionMapping;
+
+					scene.background = texture;
+					scene.environment = texture;
+
+					render();
+
+					// model
+
+					// use of RoughnessMipmapper is optional
+					const roughnessMipmapper = new RoughnessMipmapper(renderer);
+
+					const loader = new GLTFLoader().setPath('models/');
+					loader.load('Demo.gltf', function (gltf) {
+						// console.log(gltf.scene.children[0].children[1].geometry);
+						geometry = gltf.scene.children[0].children[1].geometry;
+						geometry.center();
+						mesh = new THREE.Mesh(geometry, material);
+						// mesh.position.set(0, 0, 0);
+						mesh.scale.set(0.5, 0.5, 0.5);
+						// gltf.scene.traverse(function (child) {
+
+						// 	if (child.isMesh) {
+
+						// 		roughnessMipmapper.generateMipmaps(child.material);
+
+						// 	}
+
+						// });
+
+						// scene.add(gltf.scene);
+
+						// roughnessMipmapper.dispose();
+						scene.add(mesh);
+						render();
+
+					});
+
+				});
+
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
+			renderer.toneMappingExposure = 1;
+			renderer.outputEncoding = THREE.sRGBEncoding;
+			container.appendChild(renderer.domElement);
+
+			const controls = new OrbitControls(camera, renderer.domElement);
+			controls.addEventListener('change', render); // use if there is no animation loop
+			controls.minDistance = 10;
+			controls.maxDistance = 100;
+			controls.target.set(0, 0, 0);
+			controls.update();
+
+			window.addEventListener('resize', onWindowResize);
+			function createPanel() {
+				const params = {
+					color:0xffffff,
+					clear: function () {
+
+						f1();
+
+					},
+					clear1: function () {
+
+						f2();
+
+					},
+					clear2: function () {
+
+						f3();
+
+					}
+				};
+				const panel = new GUI();
+				panel.addColor(params, 'color').name('dress color').onChange(function(val){
+					material.color.setHex( val );
+					render();
+				});
+				panel.add(params, 'clear').name('油面反光材质');
+				panel.add(params, 'clear1').name('半透明纱网材质');
+				panel.add(params, 'clear2').name('图案切换');
+				// panel.add(params, 'clear1');
+			}
+			createPanel();
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+			render();
+
+		}
+
+
+
+		function render() {
+			stats.update();
+			renderer.render(scene, camera);
+		}
+
+	</script>
+
+</body>
+
+</html>
